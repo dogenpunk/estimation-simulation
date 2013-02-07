@@ -37,17 +37,22 @@
   (double-array (apply map + (for [line lines]
                                (let [distribution (trial-distribution low-confidence-index high-confidence-index line)]
                                     (repeatedly num-trials #(.sample distribution)))))))
-(defn -main
-  "Runs a Monte Carlo simulation against a set of estimates from a CSV file."
-  [& args]
-  (with-open [in-file (io/reader (first args))]
+(defn simulate
+  "Runs the simulation"
+  [file]
+  (with-open [in-file (io/reader file)]
     (let [lines (csv/read-csv (slurp in-file))
           header (first lines)
           low-confidence-index (.indexOf header "Low Confidence Estimate")
           high-confidence-index (.indexOf header "High Confidence Estimate")
-          lines (rest lines)
-          percentile (Percentile. )
-          trials (trials 100000 low-confidence-index high-confidence-index lines)]
-      (println (format "Ran %d simulations against %d estimates" (count trials) (count lines)))
-      (doseq [x [ 5 10 20 25 50 75 80 90 95]]
-        (println (format "%d%% likely to be done after %d days" x (Math/round (.evaluate percentile trials x))))))))
+          lines (rest lines)]
+      (trials 100000 low-confidence-index high-confidence-index lines))))
+
+(defn -main
+  "Runs a Monte Carlo simulation against a set of estimates from a CSV file."
+  [& args]
+  (let [percentile (Percentile.)
+        trials (simulate (first args))]
+    (println (format "Ran %d simulations" (count trials)))
+    (doseq [x [ 5 10 20 25 50 75 80 90 95]]
+      (println (format "%d%% likely to be done after %d days" x (Math/round (.evaluate percentile trials x)))))))
