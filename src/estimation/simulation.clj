@@ -5,23 +5,28 @@
   (:import [org.apache.commons.math3.distribution LogNormalDistribution]
            [org.apache.commons.math3.stat.descriptive.rank Percentile]))
 
-(defn- p20
-  "Returns the 20% confidence estimate"
-  [low-confidence-index line]
-  (let [p20 (try (Double/parseDouble (get line low-confidence-index)) (catch Exception e 0))]
-    (if (> p20 0) p20 0.0001)))
+(defn- get-estimate
+  "Returns the estimate at the index"
+  [index line]
+  (try (Double/parseDouble (get line index)) (catch Exception e 0)))
 
-(defn- p80
-  "Returns the 80% confidence estimate"
+(defn- low-estimate
+  "Returns the low estimate"
+  [low-confidence-index line]
+  (let [estimate (get-estimate low-confidence-index line)]
+    (if (> estimate 0) estimate 0.0001)))
+
+(defn- high-estimate
+  "Returns the high  estimate"
   [high-confidence-index line]
-  (let [p80 (try (Double/parseDouble (get line high-confidence-index)) (catch Exception e 0))]
-    (if (> p80 0) p80 0.001)))
+  (let [estimate (get-estimate high-confidence-index line)]
+    (if (> estimate 0) estimate 0.001)))
 
 (defn trial-distribution
   "Return a distribution for this estimate"
   [low-confidence-index high-confidence-index line]
-  (let [p20 (p20 low-confidence-index line)
-        p80 (p80 high-confidence-index line)
+  (let [p20 (low-estimate low-confidence-index line)
+        p80 (high-estimate high-confidence-index line)
         mean (math/mean p20 p80)
         stddev (math/standard-deviation p20 p80 60)]
     (LogNormalDistribution. mean stddev)))
